@@ -19,16 +19,6 @@ export interface Appliance {
   cycleDescription: string
 }
 
-export interface MaintenanceRecord {
-  id: string
-  applianceId: string
-  date: string
-  operator: string
-  operatorType: 'self' | 'repairman'
-  cost: number
-  note: string
-}
-
 export interface ApplianceTemplate {
   type: ApplianceType
   label: string
@@ -38,3 +28,46 @@ export interface ApplianceTemplate {
 }
 
 export type MaintenanceStatus = 'overdue' | 'warning' | 'safe'
+
+export interface TutorialStep {
+  id: string
+  title: string
+  description: string
+  imageUrl?: string
+  tips?: string
+  warning?: string
+}
+
+export interface Tutorial {
+  id: string
+  title: string
+  description: string
+  applianceType: ApplianceType
+  category: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  estimatedTime: string
+  thumbnailUrl?: string
+  steps: TutorialStep[]
+  tools?: string[]
+  safetyNotes?: string[]
+}
+
+export interface PhotoProof {
+  id: string
+  dataUrl: string
+  name: string
+  size: number
+  uploadedAt: string
+}
+
+export interface MaintenanceRecord {
+  id: string
+  applianceId: string
+  date: string
+  operator: string
+  operatorType: 'self' | 'repairman'
+  cost: number
+  note: string
+  tutorialId?: string
+  photos?: PhotoProof[]
+}

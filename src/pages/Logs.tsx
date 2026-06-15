@@ -1,6 +1,7 @@
 import { useStore } from '@/store/useStore'
 import { getMaintenanceStatus, formatDisplayDate } from '@/utils/date'
 import { APPLIANCE_TYPE_MAP } from '@/constants/templates'
+import { TUTORIAL_MAP } from '@/constants/tutorials'
 import { cn } from '@/lib/utils'
 import {
   User,
@@ -9,12 +10,31 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  BookOpen,
+  Camera,
+  X,
 } from 'lucide-react'
 import { useState } from 'react'
+import { TutorialDetail } from '@/components/TutorialDetail'
+import type { PhotoProof } from '@/types'
 
 export default function Logs() {
   const { appliances, records } = useStore()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [showTutorialDetail, setShowTutorialDetail] = useState(false)
+  const [selectedTutorialId, setSelectedTutorialId] = useState<string | null>(null)
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false)
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoProof | null>(null)
+
+  const handleOpenTutorial = (tutorialId: string) => {
+    setSelectedTutorialId(tutorialId)
+    setShowTutorialDetail(true)
+  }
+
+  const handleOpenPhoto = (photo: PhotoProof) => {
+    setSelectedPhoto(photo)
+    setShowPhotoViewer(true)
+  }
 
   const applianceRecords = appliances
     .map((a) => ({
@@ -101,49 +121,103 @@ export default function Logs() {
                 </div>
 
                 <div className="divide-y divide-zinc-700/20">
-                  {displayRecords.map((record) => (
-                    <div
-                      key={record.id}
-                      className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-zinc-800/50"
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700/40">
-                        {record.operatorType === 'self' ? (
-                          <User className="h-4 w-4 text-emerald-400" />
-                        ) : (
-                          <Wrench className="h-4 w-4 text-blue-400" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-zinc-200">
-                            {record.operator}
-                          </span>
-                          <span
-                            className={cn(
-                              'rounded px-1.5 py-0.5 text-[10px] font-medium',
-                              record.operatorType === 'self'
-                                ? 'bg-emerald-500/15 text-emerald-400'
-                                : 'bg-blue-500/15 text-blue-400'
+                  {displayRecords.map((record) => {
+                    const tutorial = record.tutorialId ? TUTORIAL_MAP[record.tutorialId] : null
+                    const hasPhotos = record.photos && record.photos.length > 0
+
+                    return (
+                      <div
+                        key={record.id}
+                        className="px-5 py-3 transition-colors hover:bg-zinc-800/50"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700/40">
+                            {record.operatorType === 'self' ? (
+                              <User className="h-4 w-4 text-emerald-400" />
+                            ) : (
+                              <Wrench className="h-4 w-4 text-blue-400" />
                             )}
-                          >
-                            {record.operatorType === 'self' ? '自己' : '维修工'}
-                          </span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-zinc-200">
+                                {record.operator}
+                              </span>
+                              <span
+                                className={cn(
+                                  'rounded px-1.5 py-0.5 text-[10px] font-medium',
+                                  record.operatorType === 'self'
+                                    ? 'bg-emerald-500/15 text-emerald-400'
+                                    : 'bg-blue-500/15 text-blue-400'
+                                )}
+                              >
+                                {record.operatorType === 'self' ? '自己' : '维修工'}
+                              </span>
+                            </div>
+                            {record.note && (
+                              <p className="mt-0.5 truncate text-xs text-zinc-500">{record.note}</p>
+                            )}
+                            {tutorial && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenTutorial(record.tutorialId!)}
+                                className="mt-1.5 flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300"
+                              >
+                                <BookOpen className="h-3 w-3" />
+                                {tutorial.title}
+                              </button>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            {record.cost > 0 && (
+                              <p className="flex items-center gap-1 text-sm font-medium text-orange-400">
+                                <DollarSign className="h-3 w-3" />
+                                {record.cost.toFixed(2)}
+                              </p>
+                            )}
+                            <p className="text-xs text-zinc-500">{formatDisplayDate(record.date)}</p>
+                          </div>
                         </div>
-                        {record.note && (
-                          <p className="mt-0.5 truncate text-xs text-zinc-500">{record.note}</p>
+
+                        {hasPhotos && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="flex items-center gap-1 text-xs text-zinc-500">
+                              <Camera className="h-3 w-3" />
+                              完成凭证 {record.photos!.length}张
+                            </span>
+                            <div className="flex -space-x-2">
+                              {record.photos!.slice(0, 3).map((photo) => (
+                                <button
+                                  key={photo.id}
+                                  type="button"
+                                  onClick={() => handleOpenPhoto(photo)}
+                                  className="relative h-10 w-10 overflow-hidden rounded-lg border-2 border-zinc-800 transition-transform hover:scale-110 hover:z-10"
+                                >
+                                  <img
+                                    src={photo.dataUrl}
+                                    alt={photo.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </button>
+                              ))}
+                              {record.photos!.length > 3 && (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-zinc-800 bg-zinc-700 text-xs font-medium text-zinc-300">
+                                  +{record.photos!.length - 3}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => record.photos!.forEach(handleOpenPhoto)}
+                              className="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
+                            >
+                              查看全部
+                            </button>
+                          </div>
                         )}
                       </div>
-                      <div className="text-right shrink-0">
-                        {record.cost > 0 && (
-                          <p className="flex items-center gap-1 text-sm font-medium text-orange-400">
-                            <DollarSign className="h-3 w-3" />
-                            {record.cost.toFixed(2)}
-                          </p>
-                        )}
-                        <p className="text-xs text-zinc-500">{formatDisplayDate(record.date)}</p>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
                 {recs.length > 3 && (
@@ -167,6 +241,44 @@ export default function Logs() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      <TutorialDetail
+        isOpen={showTutorialDetail}
+        onClose={() => {
+          setShowTutorialDetail(false)
+          setSelectedTutorialId(null)
+        }}
+        tutorialId={selectedTutorialId}
+      />
+
+      {showPhotoViewer && selectedPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => {
+            setShowPhotoViewer(false)
+            setSelectedPhoto(null)
+          }}
+        >
+          <button
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            onClick={() => {
+              setShowPhotoViewer(false)
+              setSelectedPhoto(null)
+            }}
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="max-h-[90vh] max-w-[90vw] overflow-auto">
+            <img
+              src={selectedPhoto.dataUrl}
+              alt={selectedPhoto.name}
+              className="max-h-[80vh] max-w-full rounded-lg object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <p className="mt-4 text-center text-sm text-white/70">{selectedPhoto.name}</p>
+          </div>
         </div>
       )}
     </div>

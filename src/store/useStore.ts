@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Appliance, MaintenanceRecord } from '@/types'
+import type { Appliance, MaintenanceRecord, PhotoProof } from '@/types'
 import { addMonths, formatDate, generateId } from '@/utils/date'
 import { APPLIANCE_TYPE_MAP } from '@/constants/templates'
+import { TUTORIAL_MAP } from '@/constants/tutorials'
 
 interface ApplianceStore {
   appliances: Appliance[]
@@ -16,9 +17,12 @@ interface ApplianceStore {
     operator: string,
     operatorType: 'self' | 'repairman',
     cost: number,
-    note: string
+    note: string,
+    tutorialId?: string,
+    photos?: PhotoProof[]
   ) => void
   getApplianceRecords: (applianceId: string) => MaintenanceRecord[]
+  getLastTutorialForAppliance: (applianceId: string) => string | undefined
 }
 
 export const useStore = create<ApplianceStore>()(
@@ -61,7 +65,7 @@ export const useStore = create<ApplianceStore>()(
         }))
       },
 
-      performMaintenance: (applianceId, operator, operatorType, cost, note) => {
+      performMaintenance: (applianceId, operator, operatorType, cost, note, tutorialId, photos) => {
         const record: MaintenanceRecord = {
           id: generateId(),
           applianceId,
@@ -70,6 +74,8 @@ export const useStore = create<ApplianceStore>()(
           operatorType,
           cost,
           note,
+          tutorialId,
+          photos,
         }
 
         set((state) => {
@@ -100,6 +106,13 @@ export const useStore = create<ApplianceStore>()(
         return get()
           .records.filter((r) => r.applianceId === applianceId)
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      },
+
+      getLastTutorialForAppliance: (applianceId) => {
+        const records = get()
+          .records.filter((r) => r.applianceId === applianceId && r.tutorialId)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        return records.length > 0 ? records[0].tutorialId : undefined
       },
     }),
     {

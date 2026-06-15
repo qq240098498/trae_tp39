@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import type { Appliance } from '@/types'
+import type { Appliance, PhotoProof } from '@/types'
 import { useStore } from '@/store/useStore'
 import { getMaintenanceStatus, getDaysLabel, daysUntil, formatDisplayDate } from '@/utils/date'
 import { APPLIANCE_TYPE_MAP } from '@/constants/templates'
 import { MaintenanceForm } from '@/components/MaintenanceForm'
+import { TutorialDetail } from '@/components/TutorialDetail'
 import { cn } from '@/lib/utils'
 import {
   AlertTriangle,
@@ -22,6 +23,8 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [showMaintenance, setShowMaintenance] = useState(false)
   const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(null)
+  const [showTutorialDetail, setShowTutorialDetail] = useState(false)
+  const [selectedTutorialId, setSelectedTutorialId] = useState<string | null>(null)
 
   const appliancesWithStatus = appliances
     .map((a) => ({
@@ -41,9 +44,16 @@ export default function Dashboard() {
     operator: string,
     operatorType: 'self' | 'repairman',
     cost: number,
-    note: string
+    note: string,
+    tutorialId?: string,
+    photos?: PhotoProof[]
   ) => {
-    performMaintenance(applianceId, operator, operatorType, cost, note)
+    performMaintenance(applianceId, operator, operatorType, cost, note, tutorialId, photos)
+  }
+
+  const handleOpenTutorial = (tutorialId: string) => {
+    setSelectedTutorialId(tutorialId)
+    setShowTutorialDetail(true)
   }
 
   const STAT_CARDS = [
@@ -286,6 +296,16 @@ export default function Dashboard() {
         }}
         onSubmit={handleMaintenanceSubmit}
         appliance={selectedAppliance}
+        onOpenTutorial={handleOpenTutorial}
+      />
+
+      <TutorialDetail
+        isOpen={showTutorialDetail}
+        onClose={() => {
+          setShowTutorialDetail(false)
+          setSelectedTutorialId(null)
+        }}
+        tutorialId={selectedTutorialId}
       />
     </div>
   )

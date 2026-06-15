@@ -2,11 +2,13 @@ import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-do
 import Dashboard from '@/pages/Dashboard'
 import Appliances from '@/pages/Appliances'
 import Logs from '@/pages/Logs'
-import { Home, Settings, ClipboardList } from 'lucide-react'
+import Tutorials from '@/pages/Tutorials'
+import { Home, Settings, ClipboardList, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: '首页' },
+  { to: '/tutorials', icon: BookOpen, label: '教程' },
   { to: '/appliances', icon: Settings, label: '电器' },
   { to: '/logs', icon: ClipboardList, label: '记录' },
 ]
@@ -17,6 +19,7 @@ function Layout() {
       <main className="flex-1 pb-20 md:pb-0">
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/tutorials" element={<Tutorials />} />
           <Route path="/appliances" element={<Appliances />} />
           <Route path="/logs" element={<Logs />} />
         </Routes>
