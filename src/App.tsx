@@ -3,11 +3,15 @@ import Dashboard from '@/pages/Dashboard'
 import Appliances from '@/pages/Appliances'
 import Logs from '@/pages/Logs'
 import Tutorials from '@/pages/Tutorials'
-import { Home, Settings, ClipboardList, BookOpen } from 'lucide-react'
+import Consumables from '@/pages/Consumables'
+import Products from '@/pages/Products'
+import { Home, Settings, ClipboardList, BookOpen, Package, ShoppingCart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: '首页' },
+  { to: '/consumables', icon: Package, label: '耗材' },
+  { to: '/products', icon: ShoppingCart, label: '比价' },
   { to: '/tutorials', icon: BookOpen, label: '教程' },
   { to: '/appliances', icon: Settings, label: '电器' },
   { to: '/logs', icon: ClipboardList, label: '记录' },
@@ -19,6 +23,8 @@ function Layout() {
       <main className="flex-1 pb-20 md:pb-0">
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/consumables" element={<Consumables />} />
+          <Route path="/products" element={<Products />} />
           <Route path="/tutorials" element={<Tutorials />} />
           <Route path="/appliances" element={<Appliances />} />
           <Route path="/logs" element={<Logs />} />

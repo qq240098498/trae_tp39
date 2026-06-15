@@ -71,3 +71,41 @@ export interface MaintenanceRecord {
   tutorialId?: string
   photos?: PhotoProof[]
 }
+
+export interface Consumable {
+  id: string
+  name: string
+  category: string
+  quantity: number
+  unit: string
+  threshold: number
+  applianceId?: string
+  productId?: string
+  note?: string
+  updatedAt: string
+}
+
+export interface PriceRecord {
+  id: string
+  date: string
+  price: number
+  platform: string
+  note?: string
+}
+
+export interface Product {
+  id: string
+  name: string
+  category: string
+  brand?: string
+  spec?: string
+  imageUrl?: string
+  lowestPrice: number
+  lowestPriceDate: string
+  lowestPricePlatform: string
+  currentPrice?: number
+  priceRecords: PriceRecord[]
+  urls?: string[]
+  note?: string
+  createdAt: string
+}
