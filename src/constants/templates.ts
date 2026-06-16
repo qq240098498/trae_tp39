@@ -1,4 +1,16 @@
-import type { ApplianceTemplate } from '@/types'
+import type { ApplianceTemplate, Room } from '@/types'
+
+export const ROOMS: { key: Room; label: string; icon: string }[] = [
+  { key: 'living_room', label: '客厅', icon: 'Sofa' },
+  { key: 'kitchen', label: '厨房', icon: 'CookingPot' },
+  { key: 'bathroom', label: '卫生间', icon: 'Bath' },
+  { key: 'bedroom', label: '卧室', icon: 'Bed' },
+  { key: 'other', label: '其他', icon: 'Home' },
+]
+
+export const ROOM_MAP = Object.fromEntries(
+  ROOMS.map((r) => [r.key, r])
+) as Record<string, { key: Room; label: string; icon: string }>
 
 export const APPLIANCE_TEMPLATES: ApplianceTemplate[] = [
   {

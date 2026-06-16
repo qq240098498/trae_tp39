@@ -1,34 +1,43 @@
-import { useState } from 'react'
-import type { Appliance } from '@/types'
+import { useState, useRef } from 'react'
+import type { Appliance, PhotoProof, Room } from '@/types'
 import { useStore } from '@/store/useStore'
 import { getMaintenanceStatus } from '@/utils/date'
 import { ApplianceCard } from '@/components/ApplianceCard'
 import { ApplianceForm } from '@/components/ApplianceForm'
 import { MaintenanceForm } from '@/components/MaintenanceForm'
-import { APPLIANCE_TYPE_MAP } from '@/constants/templates'
+import { TutorialDetail } from '@/components/TutorialDetail'
+import { APPLIANCE_TYPE_MAP, ROOMS, ROOM_MAP } from '@/constants/templates'
 import { cn } from '@/lib/utils'
-import { Plus, Search, SlidersHorizontal } from 'lucide-react'
+import { Plus, Search, SlidersHorizontal, Download, Upload, MapPin } from 'lucide-react'
 
 type FilterType = 'all' | 'overdue' | 'warning' | 'safe'
+type RoomFilter = 'all' | Room
 
 export default function Appliances() {
-  const { appliances, updateAppliance, deleteAppliance, performMaintenance } = useStore()
+  const { appliances, updateAppliance, deleteAppliance, performMaintenance, exportChecklist, importChecklist } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [showMaintenance, setShowMaintenance] = useState(false)
   const [editAppliance, setEditAppliance] = useState<Appliance | null>(null)
   const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(null)
   const [filter, setFilter] = useState<FilterType>('all')
+  const [roomFilter, setRoomFilter] = useState<RoomFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [showTutorialDetail, setShowTutorialDetail] = useState(false)
+  const [selectedTutorialId, setSelectedTutorialId] = useState<string | null>(null)
+  const [showExportSuccess, setShowExportSuccess] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const sortedAppliances = [...appliances]
     .map((a) => ({ ...a, status: getMaintenanceStatus(a.nextMaintenanceDate) }))
     .filter((a) => {
       if (filter !== 'all' && a.status !== filter) return false
+      if (roomFilter !== 'all' && a.room !== roomFilter) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
         const label = APPLIANCE_TYPE_MAP[a.type]?.label || ''
-        return a.name.toLowerCase().includes(q) || label.includes(q)
+        const roomLabel = ROOM_MAP[a.room]?.label || ''
+        return a.name.toLowerCase().includes(q) || label.includes(q) || roomLabel.includes(q)
       }
       return true
     })
@@ -43,6 +52,43 @@ export default function Appliances() {
     overdue: appliances.filter((a) => getMaintenanceStatus(a.nextMaintenanceDate) === 'overdue').length,
     warning: appliances.filter((a) => getMaintenanceStatus(a.nextMaintenanceDate) === 'warning').length,
     safe: appliances.filter((a) => getMaintenanceStatus(a.nextMaintenanceDate) === 'safe').length,
+  }
+
+  const roomCounts = ROOMS.reduce(
+    (acc, r) => {
+      acc[r.key] = appliances.filter((a) => a.room === r.key).length
+      return acc
+    },
+    {} as Record<string, number>
+  )
+
+  const handleExport = () => {
+    const json = exportChecklist()
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `全屋电器保养清单_${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    setShowExportSuccess(true)
+    setTimeout(() => setShowExportSuccess(false), 3000)
+  }
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string
+      const success = importChecklist(text)
+      if (success) {
+        setShowExportSuccess(true)
+        setTimeout(() => setShowExportSuccess(false), 3000)
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
   }
 
   const handleEdit = (appliance: Appliance) => {
@@ -73,9 +119,16 @@ export default function Appliances() {
     operator: string,
     operatorType: 'self' | 'repairman',
     cost: number,
-    note: string
+    note: string,
+    tutorialId?: string,
+    photos?: PhotoProof[]
   ) => {
-    performMaintenance(applianceId, operator, operatorType, cost, note)
+    performMaintenance(applianceId, operator, operatorType, cost, note, tutorialId, photos)
+  }
+
+  const handleOpenTutorial = (tutorialId: string) => {
+    setSelectedTutorialId(tutorialId)
+    setShowTutorialDetail(true)
   }
 
   const FILTER_OPTIONS: { key: FilterType; label: string; color: string }[] = [
@@ -92,16 +145,81 @@ export default function Appliances() {
           <h1 className="text-2xl font-bold text-zinc-100">我的电器</h1>
           <p className="mt-1 text-sm text-zinc-500">管理家中的电器保养计划</p>
         </div>
+        <div className="flex items-center gap-2">
+          {appliances.length > 0 && (
+            <>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-700/50 bg-zinc-800/50 px-3 py-2.5 text-sm font-medium text-zinc-300 transition-all duration-200 hover:border-zinc-600 hover:text-zinc-100"
+              >
+                <Download className="h-4 w-4" />
+                导出清单
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-700/50 bg-zinc-800/50 px-3 py-2.5 text-sm font-medium text-zinc-300 transition-all duration-200 hover:border-zinc-600 hover:text-zinc-100"
+              >
+                <Upload className="h-4 w-4" />
+                导入清单
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+              />
+            </>
+          )}
+          <button
+            onClick={() => {
+              setEditAppliance(null)
+              setShowForm(true)
+            }}
+            className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/25"
+          >
+            <Plus className="h-4 w-4" />
+            添加电器
+          </button>
+        </div>
+      </div>
+
+      {showExportSuccess && (
+        <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          操作成功！
+        </div>
+      )}
+
+      <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1">
+        <MapPin className="h-4 w-4 shrink-0 text-zinc-500" />
         <button
-          onClick={() => {
-            setEditAppliance(null)
-            setShowForm(true)
-          }}
-          className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/25"
+          onClick={() => setRoomFilter('all')}
+          className={cn(
+            'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200',
+            roomFilter === 'all'
+              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+              : 'border border-zinc-700/50 text-zinc-400 hover:text-zinc-300'
+          )}
         >
-          <Plus className="h-4 w-4" />
-          添加电器
+          全部房间
         </button>
+        {ROOMS.map((room) => (
+          <button
+            key={room.key}
+            onClick={() => setRoomFilter(room.key)}
+            className={cn(
+              'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200',
+              roomFilter === room.key
+                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                : 'border border-zinc-700/50 text-zinc-400 hover:text-zinc-300'
+            )}
+          >
+            {room.label}
+            {roomCounts[room.key] > 0 && (
+              <span className="ml-1 opacity-60">({roomCounts[room.key]})</span>
+            )}
+          </button>
+        ))}
       </div>
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -194,6 +312,16 @@ export default function Appliances() {
         }}
         onSubmit={handleMaintenanceSubmit}
         appliance={selectedAppliance}
+        onOpenTutorial={handleOpenTutorial}
+      />
+
+      <TutorialDetail
+        isOpen={showTutorialDetail}
+        onClose={() => {
+          setShowTutorialDetail(false)
+          setSelectedTutorialId(null)
+        }}
+        tutorialId={selectedTutorialId}
       />
 
       {showDeleteConfirm && (

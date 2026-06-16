@@ -1,3 +1,5 @@
+export type Room = 'living_room' | 'kitchen' | 'bathroom' | 'bedroom' | 'other'
+
 export type ApplianceType =
   | 'air_conditioner'
   | 'washing_machine'
@@ -12,6 +14,7 @@ export interface Appliance {
   id: string
   name: string
   type: ApplianceType
+  room: Room
   icon: string
   lastMaintenanceDate: string
   cycleMonths: number
@@ -70,42 +73,4 @@ export interface MaintenanceRecord {
   note: string
   tutorialId?: string
   photos?: PhotoProof[]
-}
-
-export interface Consumable {
-  id: string
-  name: string
-  category: string
-  quantity: number
-  unit: string
-  threshold: number
-  applianceId?: string
-  productId?: string
-  note?: string
-  updatedAt: string
-}
-
-export interface PriceRecord {
-  id: string
-  date: string
-  price: number
-  platform: string
-  note?: string
-}
-
-export interface Product {
-  id: string
-  name: string
-  category: string
-  brand?: string
-  spec?: string
-  imageUrl?: string
-  lowestPrice: number
-  lowestPriceDate: string
-  lowestPricePlatform: string
-  currentPrice?: number
-  priceRecords: PriceRecord[]
-  urls?: string[]
-  note?: string
-  createdAt: string
 }

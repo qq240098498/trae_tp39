@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { Appliance, ApplianceType } from '@/types'
-import { APPLIANCE_TEMPLATES } from '@/constants/templates'
+import type { Appliance, ApplianceType, Room } from '@/types'
+import { APPLIANCE_TEMPLATES, ROOMS } from '@/constants/templates'
 import { formatDate } from '@/utils/date'
 import { Modal } from './Modal'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,10 @@ import {
   Bot,
   Wrench,
   Plus,
+  Sofa,
+  Bath,
+  Bed,
+  Home,
 } from 'lucide-react'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -27,6 +31,14 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Wrench,
 }
 
+const ROOM_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Sofa,
+  CookingPot,
+  Bath,
+  Bed,
+  Home,
+}
+
 interface ApplianceFormProps {
   isOpen: boolean
   onClose: () => void
@@ -37,6 +49,9 @@ interface ApplianceFormProps {
 export function ApplianceForm({ isOpen, onClose, onSubmit, editAppliance }: ApplianceFormProps) {
   const [selectedType, setSelectedType] = useState<ApplianceType>(
     editAppliance?.type || 'air_conditioner'
+  )
+  const [selectedRoom, setSelectedRoom] = useState<Room>(
+    editAppliance?.room || 'living_room'
   )
   const [name, setName] = useState(editAppliance?.name || '')
   const [lastDate, setLastDate] = useState(
@@ -67,6 +82,7 @@ export function ApplianceForm({ isOpen, onClose, onSubmit, editAppliance }: Appl
     onSubmit({
       name,
       type: selectedType,
+      room: selectedRoom,
       icon: template?.icon || 'Wrench',
       lastMaintenanceDate: lastDate,
       cycleMonths,
@@ -76,6 +92,7 @@ export function ApplianceForm({ isOpen, onClose, onSubmit, editAppliance }: Appl
     if (!editAppliance) {
       setName('')
       setSelectedType('air_conditioner')
+      setSelectedRoom('living_room')
       setLastDate(formatDate(new Date()))
       setCycleMonths(APPLIANCE_TEMPLATES[0].defaultCycleMonths)
       setCycleDescription(APPLIANCE_TEMPLATES[0].cycleDescription)
@@ -108,6 +125,31 @@ export function ApplianceForm({ isOpen, onClose, onSubmit, editAppliance }: Appl
                 >
                   <Icon className="h-5 w-5" />
                   <span>{template.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-zinc-300">所在房间</label>
+          <div className="grid grid-cols-5 gap-2">
+            {ROOMS.map((room) => {
+              const Icon = ROOM_ICON_MAP[room.icon] || Home
+              return (
+                <button
+                  key={room.key}
+                  type="button"
+                  onClick={() => setSelectedRoom(room.key)}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs transition-all duration-200',
+                    selectedRoom === room.key
+                      ? 'border-blue-500/50 bg-blue-500/15 text-blue-400'
+                      : 'border-zinc-700/50 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{room.label}</span>
                 </button>
               )
             })}

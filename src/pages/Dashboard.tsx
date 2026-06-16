@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Appliance, PhotoProof } from '@/types'
 import { useStore } from '@/store/useStore'
 import { getMaintenanceStatus, getDaysLabel, daysUntil, formatDisplayDate } from '@/utils/date'
-import { APPLIANCE_TYPE_MAP } from '@/constants/templates'
+import { APPLIANCE_TYPE_MAP, ROOM_MAP } from '@/constants/templates'
 import { MaintenanceForm } from '@/components/MaintenanceForm'
 import { TutorialDetail } from '@/components/TutorialDetail'
 import { cn } from '@/lib/utils'
@@ -15,15 +15,12 @@ import {
   Home,
   Settings,
   ArrowRight,
-  Package,
-  ShoppingCart,
-  TrendingDown,
+  MapPin,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { CONSUMABLE_CATEGORY_MAP } from '@/constants/consumables'
 
 export default function Dashboard() {
-  const { appliances, consumables, products, performMaintenance, getProductByConsumable } = useStore()
+  const { appliances, performMaintenance } = useStore()
   const navigate = useNavigate()
   const [showMaintenance, setShowMaintenance] = useState(false)
   const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(null)
@@ -42,8 +39,6 @@ export default function Dashboard() {
   const warning = appliancesWithStatus.filter((a) => a.status === 'warning')
   const safe = appliancesWithStatus.filter((a) => a.status === 'safe')
   const needsAttention = [...overdue, ...warning]
-
-  const lowStockConsumables = consumables.filter((c) => c.quantity <= c.threshold)
 
   const handleMaintenanceSubmit = (
     applianceId: string,
@@ -179,6 +174,10 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-zinc-100">{appliance.name}</h3>
                         <span className="text-xs text-zinc-500">{template?.label}</span>
+                        <span className="flex items-center gap-0.5 text-xs text-zinc-600">
+                          <MapPin className="h-3 w-3" />
+                          {ROOM_MAP[appliance.room]?.label || '其他'}
+                        </span>
                       </div>
                       <p className="mt-0.5 text-sm text-zinc-400">
                         {appliance.cycleDescription}
@@ -230,7 +229,7 @@ export default function Dashboard() {
       )}
 
       {appliances.length > 0 && (
-        <div className="mb-8">
+        <div>
           <div className="mb-4 flex items-center gap-2">
             <Settings className="h-5 w-5 text-zinc-500" />
             <h2 className="text-lg font-semibold text-zinc-100">所有电器概览</h2>
@@ -242,93 +241,60 @@ export default function Dashboard() {
                 <div
                   key={appliance.id}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg border bg-zinc-800/30 px-4 py-3 transition-all duration-200 hover:bg-zinc-800/50',
+                    'rounded-lg border bg-zinc-800/30 px-4 py-3 transition-all duration-200 hover:bg-zinc-800/50',
                     appliance.status === 'overdue' && 'border-red-500/20',
                     appliance.status === 'warning' && 'border-amber-500/20',
                     appliance.status === 'safe' && 'border-zinc-700/30'
                   )}
                 >
-                  <div
-                    className={cn(
-                      'h-2 w-2 shrink-0 rounded-full',
-                      appliance.status === 'overdue' && 'bg-red-500',
-                      appliance.status === 'warning' && 'bg-amber-500',
-                      appliance.status === 'safe' && 'bg-emerald-500'
-                    )}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-zinc-200">{appliance.name}</p>
-                    <p className="text-xs text-zinc-500">{template?.label}</p>
-                  </div>
-                  <span
-                    className={cn(
-                      'shrink-0 text-xs font-medium',
-                      appliance.status === 'overdue' && 'text-red-400',
-                      appliance.status === 'warning' && 'text-amber-400',
-                      appliance.status === 'safe' && 'text-emerald-400'
-                    )}
-                  >
-                    {getDaysLabel(appliance.nextMaintenanceDate)}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {lowStockConsumables.length > 0 && (
-        <div className="mb-8">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-red-400" />
-              <h2 className="text-lg font-semibold text-zinc-100">耗材库存预警</h2>
-              <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-400">
-                {lowStockConsumables.length} 该买了
-              </span>
-            </div>
-            <button
-              onClick={() => navigate('/consumables')}
-              className="flex items-center gap-1 text-xs text-zinc-500 transition-colors hover:text-red-400"
-            >
-              查看全部 <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-          <div className="space-y-3">
-            {lowStockConsumables.slice(0, 5).map((consumable) => {
-              const catInfo = CONSUMABLE_CATEGORY_MAP[consumable.category]
-              const product = getProductByConsumable(consumable)
-              return (
-                <div
-                  key={consumable.id}
-                  className="group flex items-center justify-between rounded-xl border-l-4 border-l-red-500 bg-zinc-800/40 px-5 py-4 transition-all duration-200 hover:bg-zinc-800/60"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/15 text-red-400">
-                      <AlertTriangle className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-zinc-100">{consumable.name}</h3>
-                      </div>
-                      <p className="mt-0.5 text-sm text-zinc-400">
-                        剩 {consumable.quantity} {consumable.unit} · 阈值 {consumable.threshold}{' '}
-                        {consumable.unit}
-                      </p>
-                      {product && (
-                        <p className="mt-0.5 text-xs text-emerald-400">
-                          <TrendingDown className="mr-1 inline h-3 w-3" />
-                          历史最低价 ¥{product.lowestPrice}
-                        </p>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'h-2 w-2 shrink-0 rounded-full',
+                        appliance.status === 'overdue' && 'bg-red-500',
+                        appliance.status === 'warning' && 'bg-amber-500',
+                        appliance.status === 'safe' && 'bg-emerald-500'
                       )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-zinc-200">{appliance.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-zinc-500">{template?.label}</p>
+                        <span className="flex items-center gap-0.5 text-xs text-zinc-600">
+                          <MapPin className="h-2.5 w-2.5" />
+                          {ROOM_MAP[appliance.room]?.label || '其他'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => navigate('/consumables')}
-                      className="rounded-lg px-4 py-2 text-sm font-medium text-white bg-red-500/80 hover:bg-red-500 transition-all duration-200 hover:shadow-lg hover:shadow-red-500/25"
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span
+                      className={cn(
+                        'text-xs font-medium',
+                        appliance.status === 'overdue' && 'text-red-400',
+                        appliance.status === 'warning' && 'text-amber-400',
+                        appliance.status === 'safe' && 'text-emerald-400'
+                      )}
                     >
-                      去补货
+                      {getDaysLabel(appliance.nextMaintenanceDate)}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedAppliance(appliance)
+                        setShowMaintenance(true)
+                      }}
+                      className={cn(
+                        'rounded-md px-3 py-1.5 text-xs font-medium text-white transition-all duration-200',
+                        appliance.status === 'overdue'
+                          ? 'bg-red-500/80 hover:bg-red-500'
+                          : appliance.status === 'warning'
+                          ? 'bg-amber-500/80 hover:bg-amber-500'
+                          : 'bg-orange-500/80 hover:bg-orange-500'
+                      )}
+                    >
+                      {appliance.status === 'overdue' || appliance.status === 'warning'
+                        ? '立即保养'
+                        : '提前保养'}
                     </button>
                   </div>
                 </div>
@@ -338,72 +304,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2">
-        <div
-          onClick={() => navigate('/consumables')}
-          className="cursor-pointer overflow-hidden rounded-xl border border-zinc-700/30 bg-zinc-800/30 p-5 transition-all duration-200 hover:border-orange-500/30 hover:bg-zinc-800/50"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400">
-              <Package className="h-5 w-5" />
-            </div>
-            <ArrowRight className="h-4 w-4 text-zinc-600 transition-colors group-hover:text-orange-400" />
-          </div>
-          <div className="mt-4">
-            <h3 className="font-semibold text-zinc-100">耗材库存</h3>
-            <p className="mt-1 text-sm text-zinc-500">
-              共 {consumables.length} 种，{lowStockConsumables.length} 种需要补货
-            </p>
-          </div>
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex-1">
-              <div className="flex justify-between text-[11px] text-zinc-500 mb-1">
-                <span>库存充足</span>
-                <span>
-                  {consumables.length - lowStockConsumables.length}/{consumables.length}
-                </span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-700/50">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-                  style={{
-                    width: `${consumables.length > 0 ? ((consumables.length - lowStockConsumables.length) / consumables.length) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          onClick={() => navigate('/products')}
-          className="cursor-pointer overflow-hidden rounded-xl border border-zinc-700/30 bg-zinc-800/30 p-5 transition-all duration-200 hover:border-emerald-500/30 hover:bg-zinc-800/50"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-              <ShoppingCart className="h-5 w-5" />
-            </div>
-            <ArrowRight className="h-4 w-4 text-zinc-600 transition-colors group-hover:text-emerald-400" />
-          </div>
-          <div className="mt-4">
-            <h3 className="font-semibold text-zinc-100">采购比价</h3>
-            <p className="mt-1 text-sm text-zinc-500">
-              商品库 {products.length} 件，随时查看历史最低价
-            </p>
-          </div>
-          <div className="mt-4 flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-400">
-              <TrendingDown className="h-3 w-3" />
-              最低价
-            </div>
-            <div className="flex items-center gap-1 rounded-md bg-zinc-700/30 px-2 py-1 text-[11px] text-zinc-400">
-              多平台比价
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {appliances.length === 0 && lowStockConsumables.length === 0 && (
+      {appliances.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700/50 py-20">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800">
             <Plus className="h-8 w-8 text-zinc-600" />

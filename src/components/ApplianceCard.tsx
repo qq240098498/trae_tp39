@@ -1,7 +1,7 @@
 import type { Appliance, MaintenanceStatus } from '@/types'
 import { StatusBadge } from './StatusBadge'
 import { getMaintenanceStatus, getDaysLabel, formatDisplayDate, daysUntil } from '@/utils/date'
-import { APPLIANCE_TYPE_MAP } from '@/constants/templates'
+import { APPLIANCE_TYPE_MAP, ROOM_MAP } from '@/constants/templates'
 import { cn } from '@/lib/utils'
 import {
   AirVent,
@@ -12,6 +12,7 @@ import {
   Droplets,
   Bot,
   Wrench,
+  MapPin,
 } from 'lucide-react'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -87,7 +88,13 @@ export function ApplianceCard({
           </div>
           <div>
             <h3 className="font-semibold text-zinc-100">{appliance.name}</h3>
-            <p className="text-xs text-zinc-500">{template?.label || '其他'}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-zinc-500">{template?.label || '其他'}</p>
+              <span className="flex items-center gap-0.5 text-xs text-zinc-600">
+                <MapPin className="h-3 w-3" />
+                {ROOM_MAP[appliance.room]?.label || '其他'}
+              </span>
+            </div>
           </div>
         </div>
         <StatusBadge status={status} />
@@ -120,19 +127,19 @@ export function ApplianceCard({
       </div>
 
       <div className="flex items-center gap-2">
-        {(status === 'overdue' || status === 'warning') && (
-          <button
-            onClick={() => onMaintenance(appliance)}
-            className={cn(
-              'flex-1 rounded-lg px-3 py-2 text-sm font-medium text-white transition-all duration-200',
-              status === 'overdue'
-                ? 'bg-red-500/80 hover:bg-red-500'
-                : 'bg-amber-500/80 hover:bg-amber-500'
-            )}
-          >
-            立即保养
-          </button>
-        )}
+        <button
+          onClick={() => onMaintenance(appliance)}
+          className={cn(
+            'flex-1 rounded-lg px-3 py-2 text-sm font-medium text-white transition-all duration-200',
+            status === 'overdue'
+              ? 'bg-red-500/80 hover:bg-red-500'
+              : status === 'warning'
+              ? 'bg-amber-500/80 hover:bg-amber-500'
+              : 'bg-orange-500/80 hover:bg-orange-500'
+          )}
+        >
+          {status === 'overdue' || status === 'warning' ? '立即保养' : '提前保养'}
+        </button>
         <button
           onClick={() => onViewRecords(appliance.id)}
           className="rounded-lg border border-zinc-600/50 px-3 py-2 text-sm text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
